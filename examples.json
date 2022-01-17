@@ -1,0 +1,8 @@
+{
+    "demoExample1": {
+        "example": "METHOD demoFunction IN demo.js"        
+    },
+    "demoExample2": {
+        "example": "FROM START TO BLANKLINE IN demo.js"
+    }
+}
