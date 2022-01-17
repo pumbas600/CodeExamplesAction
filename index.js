@@ -39,21 +39,22 @@ function isBlank(str) {
 function findEndIndex(startIndex, open, close, example) {
     if (startIndex === -1) return -1;
 
-    var openIndex = example.indexOf(open, startIndex);
-    var closeIndex = example.indexOf(close, startIndex + 1);
-    if (openIndex === -1 || closeIndex === -1) return -1;
-
+    var openIndex = startIndex;
+    var closeIndex = startIndex;
     var opens = 1;
-    while (opens != 0) {
-        openIndex = example.indexOf(open, openIndex + 1);
-        if (openIndex !== -1 && openIndex < closeIndex) {
+
+    do {
+        closeIndex = example.indexOf(close, closeIndex + 1);
+        if (closeIndex === -1)
+            return -1;
+
+        opens--;
+
+        while ((openIndex = example.indexOf(open, openIndex + 1)) < closeIndex && openIndex !== -1) {
             opens++;
-            closeIndex = example.indexOf(close, closeIndex + 1);
-            if (closeIndex === -1) return -1;
         }
-        else
-            opens--;
     }
+    while (opens !== 0)
 
     return closeIndex + 1;
 }
@@ -114,7 +115,7 @@ function parseExample(example) {
 function test() {
     const example =
     `public class Example {
-        
+
         /**
          * An example description
          */
@@ -125,6 +126,10 @@ function test() {
             }
 
             return numA + numB;
+        }
+
+        public int zero() {
+            return 0;
         }
     }`
 
