@@ -67,24 +67,29 @@ function toBlankMatcher(startIndex, example) {
     return index === -1 ? index : index - 2;
 }
 
+function findBlankLineBefore(index, example) {
+    var currentNewlineIndex = example.lastIndexOf('\n', index - 1);
+    var previousNewlineIndex = example.lastIndexOf('\n', currentNewlineIndex - 1);
+    var previousBracket = example.lastIndexOf('{', currentNewlineIndex - 1);
+
+    while (currentNewlineIndex !== -1) {
+        if ((previousNewlineIndex !== -1 && isBlank(example.slice(previousNewlineIndex, currentNewlineIndex))) || 
+            (previousBracket !== -1 && isBlank(example.slice(previousBracket + 1, currentNewlineIndex)))) 
+            return currentNewlineIndex + 1;
+        else {
+            currentNewlineIndex = previousNewlineIndex;
+            previousNewlineIndex = example.lastIndexOf('\n', currentNewlineIndex - 1);
+            previousBracket = example.lastIndexOf('{', currentNewlineIndex - 1);
+        }
+    }
+    return 0;
+}
+
 function createMethodMatchers(method) {
     function fromMethodMatcher(example) {
         const index = example.indexOf(method);
         if (index != -1) {
-            var currentNewlineIndex = example.lastIndexOf('\n', index - 1);
-            var previousNewlineIndex = example.lastIndexOf('\n', currentNewlineIndex - 1);
-            
-            while (currentNewlineIndex !== -1 && previousNewlineIndex !== -1) {
-                const slice = example.slice(previousNewlineIndex, currentNewlineIndex);
-
-                if (isBlank(slice)) 
-                    return currentNewlineIndex + 1;
-                else {
-                    currentNewlineIndex = previousNewlineIndex;
-                    previousNewlineIndex = example.lastIndexOf('\n', currentNewlineIndex - 1);
-                }
-            }
-            return 0;
+            return findBlankLineBefore(index, example);
         }
         return index;
     }
@@ -109,6 +114,10 @@ function parseExample(example) {
 function test() {
     const example =
     `public class Example {
+        
+        /**
+         * An example description
+         */
         @Test({ "hi", "hello" })
         public int demoFunction(int numA, int numB) {
             if (numA < numB) {
