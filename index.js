@@ -32,6 +32,10 @@ const main = async () => {
 
 const keyWords = [ 'FROM', 'START', 'END', 'TO', 'BLANKLINE', 'IN', 'METHOD', 'CLASS', 'PREFIX', 'SUFFIX' ]
 
+function isBlank(str) {
+    return !str.replace(/\s/g, '').length;
+}
+
 function findEndIndex(startIndex, open, close, example) {
     if (startIndex === -1) return -1;
 
@@ -40,7 +44,7 @@ function findEndIndex(startIndex, open, close, example) {
     if (openIndex === -1 || closeIndex === -1) return -1;
 
     var opens = 1;
-    while (opens != 0 && closeIndex !== -1) {
+    while (opens != 0) {
         openIndex = example.indexOf(open, openIndex + 1);
         if (openIndex !== -1 && openIndex < closeIndex) {
             opens++;
@@ -51,29 +55,7 @@ function findEndIndex(startIndex, open, close, example) {
             opens--;
     }
 
-    return closeIndex;
-}
-
-function findStartIndex(startIndex, open, close, example) {
-    if (startIndex === -1) return -1;
-
-    var openIndex = example.indexOf(open, startIndex);
-    var closeIndex = example.indexOf(close, startIndex + 1);
-    if (openIndex === -1 || closeIndex === -1) return -1;
-
-    var opens = 1;
-    while (opens != 0 && closeIndex !== -1) {
-        openIndex = example.indexOf(open, openIndex + 1);
-        if (openIndex !== -1 && openIndex < closeIndex) {
-            opens++;
-            closeIndex = example.indexOf(close, closeIndex + 1);
-            if (closeIndex === -1) return -1;
-        }
-        else
-            opens--;
-    }
-
-    return closeIndex;
+    return closeIndex + 1;
 }
 
 function fromStartMatcher(example) {
@@ -89,10 +71,18 @@ function createMethodMatchers(method) {
     function fromMethodMatcher(example) {
         const index = example.indexOf(method);
         if (index != -1) {
-            for (i = index - 1; i > 0; i--) {
+            var currentNewlineIndex = example.lastIndexOf('\n', index - 1);
+            var previousNewlineIndex = example.lastIndexOf('\n', currentNewlineIndex - 1);
+            
+            while (currentNewlineIndex !== -1 && previousNewlineIndex !== -1) {
+                const slice = example.slice(previousNewlineIndex, currentNewlineIndex);
 
-                if (example[i] === '\n' && example[i - 1] === '\n')
-                    return i + 1;
+                if (isBlank(slice)) 
+                    return currentNewlineIndex + 1;
+                else {
+                    currentNewlineIndex = previousNewlineIndex;
+                    previousNewlineIndex = example.lastIndexOf('\n', currentNewlineIndex - 1);
+                }
             }
             return 0;
         }
@@ -118,10 +108,12 @@ function parseExample(example) {
 
 function test() {
     const example =
-    `class Example {
-        
-        function demoFunction(numA, numB) {
-            if (numA < numB) return -1;
+    `public class Example {
+        @Test({ "hi", "hello" })
+        public int demoFunction(int numA, int numB) {
+            if (numA < numB) {
+                return -1;
+            }
 
             return numA + numB;
         }
@@ -133,7 +125,7 @@ function test() {
     
     console.log('From: %d To: %d', from, to);
 
-    console.log(example.slice(from, to + 1));
+    console.log(example.slice(from, to));
 }
 
 test();
