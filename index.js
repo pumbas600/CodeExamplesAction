@@ -32,6 +32,9 @@ const main = async () => {
 
 const keyWords = [ 'FROM', 'START', 'END', 'TO', 'BLANKLINE', 'IN', 'METHOD', 'CLASS', 'PREFIX', 'SUFFIX' ]
 const startingWhitespaceRegex = /^(\s+).*/;
+const requiredExampleFields = [ "usage", "from", "to", "in" ];
+const examples = { };
+
 
 function isBlank(str) {
     return !str.replace(/\s/g, '').length;
@@ -76,6 +79,9 @@ function toBlankMatcher(startIndex, example) {
 
 function findBlankLineBefore(index, example) {
     var currentNewlineIndex = example.lastIndexOf('\n', index - 1);
+    if (currentNewlineIndex === -1)
+        return -1;
+
     var previousNewlineIndex = example.lastIndexOf('\n', currentNewlineIndex - 1);
     var previousBracket = example.lastIndexOf('{', currentNewlineIndex - 1);
 
@@ -92,20 +98,48 @@ function findBlankLineBefore(index, example) {
     return 0;
 }
 
-function createGroupMatchers(method) {
-    function fromMethodMatcher(example) {
-        const index = example.indexOf(method);
+function createGroupMatchers(group) {
+    function fromGroupMatcher(example) {
+        const index = example.indexOf(group);
         if (index != -1) {
             return findBlankLineBefore(index, example);
         }
         return index;
     }
 
-    function toMethodMatcher(startIndex, example) {
-        return findEndIndex(example.indexOf(method), '{', '}', example);
+    function toGroupMatcher(startIndex, example) {
+        return findEndIndex(example.indexOf(group), '{', '}', example);
     }
 
-    return [ fromMethodMatcher, toMethodMatcher ];
+    return [ createFromGroupMatcher(group), createToGroupMatcher(group) ];
+}
+
+function createFromGroupMatcher(group) {
+    return function fromGroupMatcher(example) {
+        const index = example.indexOf(group);
+        if (index != -1) {
+            return findBlankLineBefore(index, example);
+        }
+        return index;
+    }
+}
+
+function createToGroupMatcher(group) {
+    return function toGroupMatcher(startIndex, example) {
+        return findEndIndex(example.indexOf(group), '{', '}', example);
+    }
+}
+
+function createFromNthMatcher(element, n) {
+    return function fromNthMatcher(example) {
+        var index = -1;
+        for (var i = 0; i < n; i++) {
+            index = example.indexOf(element, index + 1);
+            if (index === -1)
+                break;
+        }
+        return index;
+    }
 }
 
 function unindent(example) {
@@ -124,8 +158,60 @@ function isKeyWord(word) {
     return keyWords.includes(word);
 }
 
-function parseExample(example) {
+function parseFrom(from) {
+    const keys = from.split(" ", 2);
+    if (keys) {
+        switch(keys[0]) {
+            case 'GROUP': {
+                if (keys.length === 2) {
+                    return createFromGroupMatcher(keys[1]);
+                }
+                console.log('When using GROUP, you must specify the name of the group');
+                break;
+            }
 
+            case 'START':
+                return fromStartMatcher;
+
+            case 'FIRST': {
+                if (keys.length === 2) {
+                    return createFromNthMatcher(keys[1], 1);
+                }
+                console.log('When using FIRST, you must specify what you want to find the first of');
+                break;
+            }
+        }
+    }
+
+    return null;
+}
+
+function parseTo(to) {
+
+}
+
+function parseExample(exampleId, example) {
+    
+    const hasRequiredFields = requiredExampleFields.every(field => example[field]);
+    if (!hasRequiredFields) {
+        console.log('Missing one of the required fields: %s', requiredExampleFields);
+    }
+
+    const fromMatcher = parseFrom(example.from);
+    const toMatcher = parseTo(example.to);
+
+    if (!fromMatcher || !toMatcher)
+        console.log('Either your from expression (%s) or your to expression (%s) is invalid.', example.from, example.to);
+
+    const details = {
+        id: exampleId,
+        usage: example.usage,
+        fromMatcher: fromMatcher,
+        toMatcher: toMatcher,
+        in: example.in
+    };
+
+    examples[details.in] = [...examples[details.in], details]; 
 }
 
 //main();

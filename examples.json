@@ -1,8 +1,8 @@
 {
     "demoExample1": {
         "usage": "README.md",
-        "from": "METHOD demoFunction",
-        "to": "METHOD demoFunction",
+        "from": "GROUP demoFunction",
+        "to": "GROUP demoFunction",
         "in": "demo.js"        
     },
     "demoExample2": {
