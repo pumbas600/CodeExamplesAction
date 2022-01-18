@@ -1,8 +1,14 @@
 {
     "demoExample1": {
-        "example": "METHOD demoFunction IN demo.js"        
+        "usage": "README.md",
+        "from": "METHOD demoFunction",
+        "to": "METHOD demoFunction",
+        "in": "demo.js"        
     },
     "demoExample2": {
-        "example": "FROM START TO BLANKLINE IN demo.js"
+        "usage": "README.md",
+        "from": "START",
+        "to": "BLANKLINE",
+        "in": "demo.js"   
     }
 }
