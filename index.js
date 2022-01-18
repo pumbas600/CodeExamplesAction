@@ -31,6 +31,7 @@ const main = async () => {
 }
 
 const keyWords = [ 'FROM', 'START', 'END', 'TO', 'BLANKLINE', 'IN', 'METHOD', 'CLASS', 'PREFIX', 'SUFFIX' ]
+const startingWhitespaceRegex = /^(\s+).*/;
 
 function isBlank(str) {
     return !str.replace(/\s/g, '').length;
@@ -39,9 +40,12 @@ function isBlank(str) {
 function findEndIndex(startIndex, open, close, example) {
     if (startIndex === -1) return -1;
 
-    var openIndex = startIndex;
+    var openIndex = example.indexOf(open, startIndex);
     var closeIndex = startIndex;
     var opens = 1;
+
+    if (openIndex === -1)
+        return -1;
 
     do {
         closeIndex = example.indexOf(close, closeIndex + 1);
@@ -50,8 +54,10 @@ function findEndIndex(startIndex, open, close, example) {
 
         opens--;
 
-        while ((openIndex = example.indexOf(open, openIndex + 1)) < closeIndex && openIndex !== -1) {
+        var tempOpenIndex;
+        while ((tempOpenIndex = example.indexOf(open, openIndex + 1)) < closeIndex && tempOpenIndex !== -1) {
             opens++;
+            openIndex = tempOpenIndex;
         }
     }
     while (opens !== 0)
@@ -86,7 +92,7 @@ function findBlankLineBefore(index, example) {
     return 0;
 }
 
-function createMethodMatchers(method) {
+function createGroupMatchers(method) {
     function fromMethodMatcher(example) {
         const index = example.indexOf(method);
         if (index != -1) {
@@ -102,6 +108,18 @@ function createMethodMatchers(method) {
     return [ fromMethodMatcher, toMethodMatcher ];
 }
 
+function unindent(example) {
+    const lines = example.split('\n');
+    if (!lines) return example;
+
+    const match = lines[0].match(startingWhitespaceRegex);
+    if (match) {
+        const indent = match[1]; // Get the match
+        return lines.map(line => line.replace(indent, '')).join('\n');
+    }
+    return example;
+}
+
 function isKeyWord(word) {
     return keyWords.includes(word);
 }
@@ -114,32 +132,31 @@ function parseExample(example) {
 
 function test() {
     const example =
-    `public class Example {
-
-        /**
-         * An example description
-         */
-        @Test({ "hi", "hello" })
-        public int demoFunction(int numA, int numB) {
-            if (numA < numB) {
-                return -1;
-            }
-
-            return numA + numB;
+`public class Example {
+    /**
+     * An example description
+     */
+    @Test({ "hi", "hello" })
+    public int demoFunction(int numA, int numB) {
+        if (numA < numB) {
+            return -1;
         }
 
-        public int zero() {
-            return 0;
-        }
-    }`
+        return numA + numB;
+    }
 
-    const [fromMatcher, toMatcher] = createMethodMatchers('demoFunction');
+    public int zero() {
+        return 0;
+    }
+}`
+
+    const [fromMatcher, toMatcher] = createGroupMatchers('Example');
     const from = fromMatcher(example);
     const to = toMatcher(from, example)
     
     console.log('From: %d To: %d', from, to);
 
-    console.log(example.slice(from, to));
+    console.log(unindent(example.slice(from, to)));
 }
 
 test();
