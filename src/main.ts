@@ -12,6 +12,16 @@ interface JsonExample {
     }
 }
 
+interface Example {
+    id: string,
+    usage: string,
+    from: FromMatcher,
+    to: ToMatcher,
+    in: string,
+    prefix: string,
+    suffix: string,
+}
+
 type FromMatcher = (example: string) => number;
 type ToMatcher = (startIndex: number, example: string) => number;
 
@@ -86,6 +96,13 @@ function findEndIndex(startIndex: number, open: string, close: string, example: 
 
 // Matchers:
 
+interface Matcher {
+    readonly keyword: string,
+    readonly args: number,
+    readonly parseFrom: (args: string[]) => FromMatcher | null,
+    readonly parseTo: (args: string[]) => ToMatcher | null,
+};
+
 const fromStart: FromMatcher = (example) => 0;
 
 function createFromGroupMatcher(group: string): FromMatcher {
@@ -121,4 +138,8 @@ function createFromNthMatcher(element: string, n: number): FromMatcher {
 function readJsonExample(filename: string): JsonExample {
     const rawJson: Buffer = fs.readFileSync(filename);
     return JSON.parse(rawJson.toString());
+}
+
+function parseExample(exampleId: string, example: JsonExample): Example {
+    return { };
 }
