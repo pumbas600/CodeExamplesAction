@@ -21,6 +21,13 @@ interface Example {
     suffix: string;
 }
 
+interface Matcher {
+    readonly keyword: string;
+    readonly args: number[];
+    readonly parseFrom: (args: string[]) => FromMatcher | null;
+    readonly parseTo: (args: string[]) => ToMatcher | null;
+}
+
 type FromMatcher = (example: string) => number;
 type ToMatcher = (startIndex: number, example: string) => number;
 
@@ -144,13 +151,6 @@ function findNthLastElement(
 }
 
 // Matchers:
-
-interface Matcher {
-    readonly keyword: string;
-    readonly args: number[];
-    readonly parseFrom: (args: string[]) => FromMatcher | null;
-    readonly parseTo: (args: string[]) => ToMatcher | null;
-}
 
 const startMatcher: Matcher = {
     keyword: 'start',
