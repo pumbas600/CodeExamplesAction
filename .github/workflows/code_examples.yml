@@ -1,0 +1,19 @@
+name: Example of managing the code examples in your wiki / readme
+on: 
+  push:
+    branches:
+      - "main" # Main branch to monitor for updates
+
+job:
+  code-examples:
+    runs-on: ubuntu-latest
+    name: Checks for changes to the code examples and updates them as appropriate
+    steps:
+      # Clone repository to work area of the workflow
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # Check for any updates / Update
+
+      - name: Push the changes
+        uses: actions/
