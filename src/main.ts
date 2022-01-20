@@ -1,14 +1,12 @@
 import fs from 'fs';
 
 interface JsonExample {
-    [exampleId: string]: {
-        usage: string;
-        from: string;
-        to: string;
-        in: string;
-        prefix: string | undefined;
-        suffix: string | undefined;
-    };
+    usage: string;
+    from: string;
+    to: string;
+    in: string;
+    prefix: string | undefined;
+    suffix: string | undefined;
 }
 
 interface Example {
@@ -309,11 +307,37 @@ function parseMatchers(
 
 // Code Example Management:
 
-function readJsonExample(filename: string): JsonExample {
+const examples: { [exampleIn: string]: Example | undefined } = {};
+
+function readJsonExamples(filename: string): {
+    [exampleId: string]: JsonExample;
+} {
     const rawJson: Buffer = fs.readFileSync(filename);
     return JSON.parse(rawJson.toString());
 }
 
-// function parseExample(exampleId: string, example: JsonExample): Example {
-//     return {};
-// }
+function parseExample(exampleId: string, example: JsonExample): Example | null {
+    const [fromMatcher, toMatcher] = parseMatchers(example.from, example.to);
+
+    if (!fromMatcher || !toMatcher) return null;
+
+    return {
+        id: exampleId,
+        usage: example.usage,
+        from: fromMatcher,
+        to: toMatcher,
+        in: example.in,
+        prefix: example.prefix ?? '',
+        suffix: example.suffix ?? '',
+    };
+}
+
+function registerExamples(filename: string) {
+    const jsonExamples = readJsonExamples(filename);
+    Object.keys(jsonExamples).forEach((exampleId: string) => {
+        const jsonExample = jsonExamples[exampleId];
+        const example = parseExample(exampleId, jsonExample);
+
+        if (example) examples[example.in] = example;
+    });
+}
