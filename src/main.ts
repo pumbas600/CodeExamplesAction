@@ -152,6 +152,8 @@ function findNthLastElement(
 
 // Matchers:
 
+const matchers: { [keyword: string]: Matcher | undefined } = {};
+
 const startMatcher: Matcher = {
     keyword: 'start',
     args: [0],
@@ -180,7 +182,7 @@ const groupMatcher: Matcher = {
 
 const firstMatcher: Matcher = {
     keyword: 'first',
-    args: [1, 2],
+    args: [2, 1],
     parseFrom: (args: string[]): FromMatcher | null => {
         try {
             const n = args.length === 1 ? 1 : Number.parseInt(args[0]);
@@ -190,12 +192,7 @@ const firstMatcher: Matcher = {
                 return findNthElement(example, element, n);
             };
         } catch (e) {
-            // There will only ever be an error if there are 2 args
-            console.log(
-                'The nth position of the element %s in "from": "FIRST..." must be an integer, not %s',
-                args[1],
-                args[0]
-            );
+            // The first argument is not a number
             return null;
         }
     },
@@ -208,12 +205,7 @@ const firstMatcher: Matcher = {
                 return findNthElement(example, element, n, startIndex + 1);
             };
         } catch (e) {
-            // There will only ever be an error if there are 2 args
-            console.log(
-                'The nth position of the element %s in "to": "FIRST..." must be an integer, not %s',
-                args[1],
-                args[0]
-            );
+            // The first argument is not a number
             return null;
         }
     },
@@ -221,7 +213,7 @@ const firstMatcher: Matcher = {
 
 const lastMatcher: Matcher = {
     keyword: 'last',
-    args: [1, 2],
+    args: [2, 1],
     parseFrom: (args: string[]): FromMatcher | null => {
         try {
             const n = args.length === 1 ? 1 : Number.parseInt(args[0]);
@@ -231,12 +223,7 @@ const lastMatcher: Matcher = {
                 return findNthLastElement(example, element, n);
             };
         } catch (e) {
-            // There will only ever be an error if there are 2 args
-            console.log(
-                'The nth position of the element %s in "from": "LAST..." must be an integer, not %s',
-                args[1],
-                args[0]
-            );
+            // The first argument is not a number
             return null;
         }
     },
@@ -249,16 +236,76 @@ const lastMatcher: Matcher = {
                 return findNthLastElement(example, element, n);
             };
         } catch (e) {
-            // There will only ever be an error if there are 2 args
-            console.log(
-                'The nth position of the element %s in "to": "LAST..." must be an integer, not %s',
-                args[1],
-                args[0]
-            );
+            // The first argument is not a number
             return null;
         }
     },
 };
+
+registerMatchers(startMatcher, groupMatcher, firstMatcher, lastMatcher);
+
+function registerMatchers(...matchers: Matcher[]) {
+    matchers.forEach((matcher: Matcher) => {
+        matchers[matcher.keyword] = matcher;
+    });
+}
+
+function parseContext(context: string): [Matcher | undefined, string] {
+    const splitContext = context.split(' ', 2);
+    const keyword = splitContext[0].toLocaleLowerCase();
+    const args = splitContext.length === 2 ? splitContext[1] : '';
+    const matcher = matchers[keyword];
+
+    return [matcher, args];
+}
+
+function parseMatchers(
+    from: string,
+    to: string
+): [FromMatcher | null, ToMatcher | null] {
+    const [fromMatcher, fromArgs] = parseContext(from);
+    const [toMatcher, toArgs] = parseContext(to);
+
+    if (!fromMatcher) {
+        console.log('"from": "%s" does not specify a valid keyword', from);
+        return [null, null];
+    }
+    if (!toMatcher) {
+        console.log('"to": "%s" does not specify a valid keyword', to);
+        return [null, null];
+    }
+
+    var parsedFromMatcher: FromMatcher | null = null;
+    var parsedToMatcher: ToMatcher | null = null;
+
+    // Loop through the possible number of args and use the first one which returns a valid matcher
+    for (var i = 0; i < fromMatcher.args.length; i++) {
+        const argCount = fromMatcher.args[i];
+        const splitArgs = fromArgs.split(' ', argCount);
+        if (splitArgs.length === argCount) {
+            const matcher = fromMatcher.parseFrom(splitArgs);
+            if (matcher) {
+                parsedFromMatcher = matcher;
+                break;
+            }
+        }
+    }
+
+    // Loop through the possible number of args and use the first one which returns a valid matcher
+    for (var i = 0; i < toMatcher.args.length; i++) {
+        const argCount = toMatcher.args[i];
+        const splitArgs = toArgs.split(' ', argCount);
+        if (splitArgs.length === argCount) {
+            const matcher = toMatcher.parseTo(splitArgs);
+            if (matcher) {
+                parsedToMatcher = matcher;
+                break;
+            }
+        }
+    }
+
+    return [parsedFromMatcher, parsedToMatcher];
+}
 
 // Code Example Management:
 
