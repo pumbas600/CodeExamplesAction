@@ -379,7 +379,8 @@ async function run() {
         });
 
         changedFiles.forEach((file) => {
-            if (file.status === 'unchanged') return;
+            if (file.status === 'unchanged' || file.status === 'removed')
+                return;
 
             const lastSlashIndex = file.filename.lastIndexOf('/');
             const filename =
