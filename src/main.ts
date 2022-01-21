@@ -309,7 +309,7 @@ function parseMatchers(
 
 // Code Example Management:
 
-const examples: { [exampleIn: string]: Example } = {};
+const examples: { [exampleIn: string]: Example | undefined } = {};
 
 function readJsonExamples(filename: string): {
     [exampleId: string]: JsonExample;
@@ -344,6 +344,8 @@ function registerExamples(filename: string) {
     });
 }
 
+function checkForChanges() {}
+
 async function run() {
     try {
         const owner = core.getInput('owner', { required: true });
@@ -377,9 +379,18 @@ async function run() {
         });
 
         changedFiles.forEach((file) => {
-            if (file.status !== 'unchanged' && file.filename in examples) {
-                const example = examples[file.filename];
-            }
+            if (file.status === 'unchanged') return;
+
+            const lastSlashIndex = file.filename.lastIndexOf('/');
+            const filename =
+                lastSlashIndex === -1
+                    ? file.filename
+                    : file.filename.substring(lastSlashIndex + 1);
+
+            const example = examples[filename];
+            if (!example) return;
+
+            const content = fs.readFileSync(file.filename).toString();
         });
     } catch (e) {
         const error = e as Error;
