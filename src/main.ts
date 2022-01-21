@@ -1,4 +1,6 @@
 import fs from 'fs';
+import core from '@actions/core';
+import github from '@actions/github';
 
 interface JsonExample {
     usage: string;
@@ -307,7 +309,7 @@ function parseMatchers(
 
 // Code Example Management:
 
-const examples: { [exampleIn: string]: Example | undefined } = {};
+const examples: { [exampleIn: string]: Example } = {};
 
 function readJsonExamples(filename: string): {
     [exampleId: string]: JsonExample;
@@ -340,4 +342,47 @@ function registerExamples(filename: string) {
 
         if (example) examples[example.in] = example;
     });
+}
+
+async function run() {
+    try {
+        const owner = core.getInput('owner', { required: true });
+        const repo = core.getInput('repo', { required: true });
+        const token = core.getInput('token', { required: true });
+        const filename = core.getInput('filename');
+        const prNumber = Number.parseInt(
+            core.getInput('pr_number', { required: true })
+        );
+
+        const octokit = github.getOctokit(token);
+        const { status } = await octokit.rest.pulls.checkIfMerged({
+            owner: owner,
+            repo: repo,
+            pull_number: prNumber,
+        });
+
+        if ((status as Number) === 404) {
+            // Not merged
+            core.setFailed('The pull request specified has not been merged!');
+            return;
+        }
+
+        // Load the examples json file
+        registerExamples(filename);
+
+        const { data: changedFiles } = await octokit.rest.pulls.listFiles({
+            owner: owner,
+            repo: repo,
+            pull_number: prNumber,
+        });
+
+        changedFiles.forEach((file) => {
+            if (file.status !== 'unchanged' && file.filename in examples) {
+                const example = examples[file.filename];
+            }
+        });
+    } catch (e) {
+        const error = e as Error;
+        core.setFailed(error.message);
+    }
 }
